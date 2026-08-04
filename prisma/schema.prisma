@@ -1,0 +1,154 @@
+// ClaimsPro data model — cloud PostgreSQL (Neon / Supabase) via Prisma ORM
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CLIENT
+  PROCESSOR
+  ADMIN
+}
+
+enum PolicyCategory {
+  MEDICAL
+  AUTOMOTIVE
+  HOMEOWNERS
+}
+
+enum ClaimStatus {
+  PENDING
+  VERIFIED
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(CLIENT)
+  createdAt     DateTime @default(now())
+
+  claims        Claim[]        @relation("ClaimOwner")
+  processed     Claim[]        @relation("ClaimProcessor")
+  loasGenerated Loa[]          @relation("LoaGeneratedBy")
+  notifications Notification[]
+  chatMessages  ChatMessage[]
+
+  @@map("users")
+}
+
+model Claim {
+  id          String         @id @default(cuid())
+  referenceId String         @unique
+  category    PolicyCategory
+  estimate    Decimal        @db.Decimal(12, 2)
+  status      ClaimStatus    @default(PENDING)
+
+  userId      String
+  user        User           @relation("ClaimOwner", fields: [userId], references: [id])
+
+  processorId String?
+  processor   User?          @relation("ClaimProcessor", fields: [processorId], references: [id])
+
+  documents   Document[]
+  loa         Loa?
+  payments    Payment[]
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("claims")
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  claimId    String
+  claim      Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  fileName   String
+  fileUrl    String
+  mimeType   String
+  sizeBytes  Int
+  uploadedAt DateTime @default(now())
+
+  @@map("documents")
+}
+
+model Loa {
+  id          String   @id @default(cuid())
+  claimId     String   @unique
+  claim       Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  content     String   @db.Text
+  generatedAt DateTime @default(now())
+
+  generatedById String
+  generatedBy   User   @relation("LoaGeneratedBy", fields: [generatedById], references: [id])
+
+  @@map("letters_of_authorization")
+}
+
+enum NotificationType {
+  STATUS_UPDATE
+  RENEWAL
+  PAYMENT
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  message   String
+  read      Boolean          @default(false)
+  claimId   String?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+enum PaymentProvider {
+  GCASH
+  MAYA
+  PAYPAL
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model Payment {
+  id          String          @id @default(cuid())
+  claimId     String
+  claim       Claim           @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  provider    PaymentProvider
+  amount      Decimal         @db.Decimal(12, 2)
+  status      PaymentStatus   @default(PENDING)
+  providerRef String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("payments")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   // "user" | "assistant"
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("chat_messages")
+}
