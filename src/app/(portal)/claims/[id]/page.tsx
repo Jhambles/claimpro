@@ -101,9 +101,8 @@ export default function ClaimDetailPage() {
   }
 
   async function viewLoa() {
-    const w = window.open("", "_blank");
+    const w = window.open("", "_blank", "noopener");
     if (w) {
-      w.opener = null; // same protection as noopener, without the features string that made Chrome/Firefox treat this as a stricter "popup window" request and start blocking it
       w.document.write("<p style='font-family:sans-serif;padding:40px;color:#64748b;'>Generating your Letter of Authorization…</p>");
     }
 
@@ -188,7 +187,7 @@ export default function ClaimDetailPage() {
           <ul className="space-y-2 mb-6">
             {claim.documents?.map((d) => (
               <li key={d.id} className="flex justify-between text-sm border-b border-slate-50 pb-2">
-                <a href={d.fileUrl} target="_blank" rel="noreferrer" className="text-teal-600 underline">{d.fileName}</a>
+                <a href={`/api/claims/${id}/documents/${d.id}`} target="_blank" rel="noreferrer" className="text-teal-600 underline">{d.fileName}</a>
                 <span className="text-slate-400">{(d.sizeBytes / 1024).toFixed(0)} KB</span>
               </li>
             ))}

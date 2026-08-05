@@ -12,4 +12,8 @@ export class PrismaDocumentRepository implements IDocumentRepository {
   listForClaim(claimId: string) {
     return this.db.document.findMany({ where: { claimId }, orderBy: { uploadedAt: "desc" } });
   }
+
+  findById(id: string) {
+    return this.db.document.findUnique({ where: { id } });
+  }
 }

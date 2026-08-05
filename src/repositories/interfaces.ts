@@ -52,4 +52,5 @@ export interface IPaymentRepository {
 export interface IDocumentRepository {
   createForClaim(data: { claimId: string; fileName: string; fileUrl: string; mimeType: string; sizeBytes: number }): Promise<Document>;
   listForClaim(claimId: string): Promise<Document[]>;
+  findById(id: string): Promise<Document | null>;
 }

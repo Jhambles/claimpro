@@ -1,4 +1,4 @@
-import { put } from "@vercel/blob";
+import { put, get } from "@vercel/blob";
 import { IDocumentRepository, IClaimRepository } from "@/repositories/interfaces";
 import { PrismaDocumentRepository } from "@/repositories/document.repository";
 import { PrismaClaimRepository } from "@/repositories/claim.repository";
@@ -28,7 +28,7 @@ export class DocumentService {
       );
     }
 
-    const blob = await put(`claims/${claimId}/${Date.now()}-${file.name}`, file, { access: "public" });
+    const blob = await put(`claims/${claimId}/${Date.now()}-${file.name}`, file, { access: "private" });
 
     return this.documents.createForClaim({
       claimId,
@@ -41,5 +41,22 @@ export class DocumentService {
 
   listForClaim(claimId: string) {
     return this.documents.listForClaim(claimId);
+  }
+
+  async downloadForClaim(claimId: string, docId: string, requesterId: string, requesterRole: string) {
+    const claim = await this.claims.findById(claimId);
+    if (!claim) throw new ServiceError("Claim not found.", 404);
+
+    const isOwner = claim.userId === requesterId;
+    const isStaff = requesterRole === "PROCESSOR" || requesterRole === "ADMIN";
+    if (!isOwner && !isStaff) throw new ServiceError("Forbidden.", 403);
+
+    const doc = await this.documents.findById(docId);
+    if (!doc || doc.claimId !== claimId) throw new ServiceError("Document not found.", 404);
+
+    const result = await get(doc.fileUrl, { access: "private" });
+    if (!result) throw new ServiceError("File content unavailable.", 404);
+
+    return { stream: result.stream, contentType: result.blob.contentType, fileName: doc.fileName };
   }
 }
