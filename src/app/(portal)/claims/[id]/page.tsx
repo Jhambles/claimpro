@@ -101,8 +101,16 @@ export default function ClaimDetailPage() {
   }
 
   async function viewLoa() {
-    const w = window.open("", "_blank", "noopener");
+    // Open the window synchronously, in direct response to the click, before
+    // any await — otherwise browsers treat the later window.open() as a
+    // non-user-initiated popup and silently block it. Also: pass NO features
+    // string here — even "noopener" as the 3rd arg makes Chrome/Firefox treat
+    // this as a popup-style window request instead of a plain tab, which
+    // triggers much stricter blocking. Sever window.opener via the property
+    // instead, right after opening, for the same protection without that cost.
+    const w = window.open("", "_blank");
     if (w) {
+      w.opener = null;
       w.document.write("<p style='font-family:sans-serif;padding:40px;color:#64748b;'>Generating your Letter of Authorization…</p>");
     }
 
