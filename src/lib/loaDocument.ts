@@ -25,7 +25,7 @@ export function buildLoaHtml(content: string, qrCodeDataUrl?: string, payoutUrl?
       <div style="margin-top:32px;padding-top:24px;border-top:1px dashed #ccc;text-align:center;">
         <img src="${qrCodeDataUrl}" alt="Scan to claim your payout" width="180" height="180" />
         <p style="font-family:sans-serif;font-size:13px;color:#475569;margin-top:8px;">
-          Scan to claim your payout via GCash, Maya, or PayPal
+          Scan to claim your payout via GCash
         </p>
         ${safePayoutUrl ? `<p style="font-family:sans-serif;font-size:11px;color:#94a3b8;">${safePayoutUrl}</p>` : ""}
       </div>`

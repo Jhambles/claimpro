@@ -37,7 +37,13 @@ function LoginForm() {
       setError("Invalid credentials. Please check your email and password.");
       return;
     }
-    router.push(ROLE_REDIRECT[role] ?? "/claimant");
+    // If we got here via the middleware bouncing an unauthenticated request
+    // (e.g. someone scanning the LOA's QR code on a device without a
+    // session), honor that original destination instead of always sending
+    // the user to their role's default portal — otherwise the QR flow dead-
+    // ends on the dashboard instead of the claim's payout page.
+    const callbackUrl = params.get("callbackUrl");
+    router.push(callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : ROLE_REDIRECT[role] ?? "/claimant");
   }
 
   return (

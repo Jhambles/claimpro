@@ -38,7 +38,7 @@ export class LoaService {
       `This document serves as formal authorization for Record #${referenceId}, filed by ${claimantName}.`,
       `The claim regarding ${category.toLowerCase()} coverage has been verified and approved for disbursement.`,
       "",
-      "Scan the QR code below to claim your payout via GCash, Maya, or PayPal.",
+      "Scan the QR code below to claim your payout via GCash.",
       "",
       "Signature: ________________",
       "Claims Administrator",
