@@ -1,14 +1,18 @@
 import { ClaimStatus, PolicyCategory, Role } from "@prisma/client";
-import { IClaimRepository } from "@/repositories/interfaces";
+import { IClaimRepository, ClaimWithRelations } from "@/repositories/interfaces";
 import { PrismaClaimRepository } from "@/repositories/claim.repository";
 import { NotificationService } from "./notification.service";
+import { AuditService } from "./audit.service";
+import { ClaimValidationService } from "./claim-validation.service";
 
 // Business rules live here (SRP). Route handlers stay thin "controllers" that
 // only translate HTTP <-> service calls; the service never touches req/res.
 export class ClaimService {
   constructor(
     private readonly claims: IClaimRepository = new PrismaClaimRepository(),
-    private readonly notifications: NotificationService = new NotificationService()
+    private readonly notifications: NotificationService = new NotificationService(),
+    private readonly audit: AuditService = new AuditService(),
+    private readonly validation: ClaimValidationService = new ClaimValidationService()
   ) {}
 
   private static readonly VALID_TRANSITIONS: Record<ClaimStatus, ClaimStatus[]> = {
@@ -28,6 +32,10 @@ export class ClaimService {
 
   getClaim(id: string) {
     return this.claims.findById(id);
+  }
+
+  getValidationIssues(claim: ClaimWithRelations) {
+    return this.validation.evaluate(claim);
   }
 
   async createClaim(userId: string, input: { category: PolicyCategory; estimate: number }) {
@@ -53,13 +61,29 @@ export class ClaimService {
     throw new ServiceError("Could not generate a unique reference ID. Please try again.", 500);
   }
 
-  async transitionStatus(claimId: string, nextStatus: ClaimStatus, processorId: string) {
+  async transitionStatus(claimId: string, nextStatus: ClaimStatus, processorId: string, actor?: { name: string; role: string }) {
     const claim = await this.claims.findById(claimId);
     if (!claim) throw new ServiceError("Claim not found.", 404);
 
     const allowed = ClaimService.VALID_TRANSITIONS[claim.status];
     if (!allowed.includes(nextStatus)) {
       throw new ServiceError(`Cannot move claim from ${claim.status} to ${nextStatus}.`, 409);
+    }
+
+    // Don't let a claim advance to APPROVED while it's still missing required
+    // information (documents, a valid estimate) or has internally-inconsistent
+    // data (e.g. corrupted uploads, a payout that already exceeds the
+    // estimate) â€” this is the concrete enforcement behind "prevent outdated
+    // or incorrect information from being used", not just an informational
+    // display staff have to remember to check.
+    if (nextStatus === "APPROVED") {
+      const blocking = this.validation.evaluate(claim).filter((i) => i.severity === "blocking");
+      if (blocking.length > 0) {
+        throw new ServiceError(
+          `Cannot approve this claim â€” unresolved issues: ${blocking.map((i) => i.message).join(" ")}`,
+          422
+        );
+      }
     }
 
     const updated = await this.claims.updateStatus(claimId, nextStatus, processorId);
@@ -71,6 +95,16 @@ export class ClaimService {
     } catch (err) {
       // A notification failure still shouldn't fail the (already-persisted) status change.
       console.error("Failed to create status-change notification:", err);
+    }
+
+    if (actor) {
+      await this.audit.log({
+        actorId: processorId,
+        actorName: actor.name,
+        actorRole: actor.role,
+        action: "CLAIM_STATUS_CHANGED",
+        detail: `${updated.referenceId} moved from ${claim.status} to ${nextStatus}`,
+      });
     }
 
     return updated;

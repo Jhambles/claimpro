@@ -5,7 +5,15 @@ import { IPaymentRepository } from "./interfaces";
 export class PrismaPaymentRepository implements IPaymentRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
-  create(data: { claimId: string; provider: PaymentProvider; amount: number; providerRef?: string }) {
+  create(data: {
+    claimId: string;
+    provider: PaymentProvider;
+    amount: number;
+    providerRef?: string;
+    bankName?: string;
+    accountName?: string;
+    accountNumber?: string;
+  }) {
     return this.db.payment.create({ data });
   }
 

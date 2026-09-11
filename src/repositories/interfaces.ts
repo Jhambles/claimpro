@@ -2,7 +2,7 @@ import { Claim, ClaimStatus, Document, Loa, Payment, PolicyCategory, Role, User 
 
 // Abstractions (DIP): services depend on these interfaces, not on Prisma directly.
 // Swapping persistence (e.g. to a mock in tests, or a different DB) means writing
-// a new class that satisfies the interface — the service layer never changes (OCP).
+// a new class that satisfies the interface â€” the service layer never changes (OCP).
 
 export type ClaimWithRelations = Claim & {
   user: Pick<User, "id" | "name" | "email">;
@@ -31,7 +31,7 @@ export interface IUserRepository {
 }
 
 export interface ILoaRepository {
-  createForClaim(claimId: string, content: string, generatedById: string): Promise<Loa>;
+  createForClaim(claimId: string, content: string, generatedById: string, provider: string): Promise<Loa>;
   count(): Promise<number>;
 }
 
@@ -43,10 +43,28 @@ export interface INotificationRepository {
 }
 
 export interface IPaymentRepository {
-  create(data: { claimId: string; provider: "GCASH" | "MAYA" | "PAYPAL"; amount: number; providerRef?: string }): Promise<any>;
+  create(data: {
+    claimId: string;
+    provider: "GCASH" | "MAYA" | "PAYPAL" | "BANK_TRANSFER";
+    amount: number;
+    providerRef?: string;
+    bankName?: string;
+    accountName?: string;
+    accountNumber?: string;
+  }): Promise<any>;
   findById(id: string): Promise<any>;
   updateStatus(id: string, status: "PENDING" | "PAID" | "FAILED"): Promise<any>;
   listForClaim(claimId: string): Promise<any[]>;
+}
+
+export interface IAuditLogRepository {
+  log(data: { actorId?: string; actorName: string; actorRole: string; action: string; detail?: string }): Promise<void>;
+  list(limit?: number): Promise<any[]>;
+}
+
+export interface IPayoutPreferenceRepository {
+  findByUserId(userId: string): Promise<any | null>;
+  upsert(userId: string, data: { provider: string; bankName?: string | null; accountName?: string | null; accountNumber?: string | null }): Promise<any>;
 }
 
 export interface IDocumentRepository {

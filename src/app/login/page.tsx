@@ -13,7 +13,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 const ROLE_REDIRECT: Record<string, string> = {
   client: "/claimant",
-  processor: "/processor",
+  processor: "/admin",
   admin: "/admin",
 };
 
@@ -40,8 +40,7 @@ function LoginForm() {
     // If we got here via the middleware bouncing an unauthenticated request
     // (e.g. someone scanning the LOA's QR code on a device without a
     // session), honor that original destination instead of always sending
-    // the user to their role's default portal — otherwise the QR flow dead-
-    // ends on the dashboard instead of the claim's payout page.
+    // the user to their role's default portal.
     const callbackUrl = params.get("callbackUrl");
     router.push(callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : ROLE_REDIRECT[role] ?? "/claimant");
   }

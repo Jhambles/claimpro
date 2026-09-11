@@ -26,6 +26,7 @@ export default function LandingPage() {
             src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=1470"
             alt=""
             fill
+            priority
             className="object-cover opacity-10"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent" />
@@ -61,7 +62,7 @@ export default function LandingPage() {
           <p className="text-slate-500 mt-2">Select your designated interface to manage the claims lifecycle.</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-10 max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
           <RoleCard
             icon="fa-user-tag"
             title="Claimant"
@@ -70,18 +71,11 @@ export default function LandingPage() {
             cta="Enter Portal"
           />
           <RoleCard
-            icon="fa-clipboard-check"
-            title="Processor"
-            desc="Verify document authenticity and evaluate claim eligibility requirements."
-            href="/login?role=processor"
-            cta="Staff Login"
-          />
-          <RoleCard
             icon="fa-gears"
             title="Admin"
-            desc="Configure system parameters, manage users, and monitor LOA analytics."
+            desc="Configure system parameters, manage users, verify claims, and monitor LOA analytics."
             href="/login?role=admin"
-            cta="Admin Panel"
+            cta="Staff / Admin Panel"
           />
         </div>
       </section>

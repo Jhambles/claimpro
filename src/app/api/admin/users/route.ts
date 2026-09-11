@@ -5,8 +5,10 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PrismaUserRepository } from "@/repositories/user.repository";
 import { hashPassword } from "@/lib/password";
+import { AuditService } from "@/services/audit.service";
 
 const userRepo = new PrismaUserRepository();
+const auditService = new AuditService();
 
 const createUserSchema = z.object({
   name: z.string().min(1),
@@ -15,7 +17,7 @@ const createUserSchema = z.object({
   role: z.enum(["CLIENT", "PROCESSOR", "ADMIN"]),
 });
 
-// GET /api/admin/users — list all users (ADMIN only)
+// GET /api/admin/users â€” list all users (ADMIN only)
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -27,7 +29,7 @@ export async function GET() {
   return NextResponse.json(users);
 }
 
-// POST /api/admin/users — provision a new user account (ADMIN only)
+// POST /api/admin/users â€” provision a new user account (ADMIN only)
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -40,12 +42,19 @@ export async function POST(req: NextRequest) {
     const existing = await userRepo.findByEmail(parsed.data.email);
     if (existing) return NextResponse.json({ error: "A user with that email already exists." }, { status: 409 });
 
-    // Only passwordHash goes to Prisma — the User model has no `password`
+    // Only passwordHash goes to Prisma â€” the User model has no `password`
     // column, so passing the raw plaintext field through (previously done via
     // `...parsed.data`) caused Prisma to reject the whole insert.
     const { password, ...rest } = parsed.data;
     const passwordHash = await hashPassword(password);
     const user = await userRepo.create({ ...rest, passwordHash });
+    await auditService.log({
+      actorId: session.user.id,
+      actorName: session.user.name ?? session.user.email,
+      actorRole: session.user.role,
+      action: "USER_PROVISIONED",
+      detail: `Created ${user.role} account for ${user.email}`,
+    });
     return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role }, { status: 201 });
   } catch (err) {
     console.error("Failed to create user:", err);

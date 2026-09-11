@@ -6,15 +6,16 @@ import { ServiceError } from "@/services/claim.service";
 
 const documentService = new DocumentService();
 
-// GET /api/claims/:id/documents/:docId — stream a private document (owner or staff only)
-export async function GET(_req: NextRequest, { params }: { params: { id: string; docId: string } }) {
+// GET /api/claims/:id/documents/:docId â€” stream a private document (owner or staff only)
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string; docId: string }> }) {
+  const { id, docId } = await params;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const { stream, contentType, fileName } = await documentService.downloadForClaim(
-      params.id,
-      params.docId,
+      id,
+      docId,
       session.user.id,
       session.user.role
     );

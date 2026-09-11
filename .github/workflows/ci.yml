@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # These are dummy values only for CI's typecheck/build/test steps â€” no
+    # real database or secret is used or needed here. validateEnv() (see
+    # src/lib/env.ts) requires these to be present just to import the Prisma
+    # module; nothing in this job actually connects to a database.
+    env:
+      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+      NEXTAUTH_SECRET: "ci-only-value-not-used-in-production"
+      NEXTAUTH_URL: "http://localhost:3000"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.9"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Type-check
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm test -- --ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Audit dependencies (non-blocking)
+        run: npm audit --audit-level=critical || true

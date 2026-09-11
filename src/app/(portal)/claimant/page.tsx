@@ -2,12 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Sidebar } from "@/components/ui/Sidebar";
+import { CLAIMANT_NAV } from "@/lib/claimantNav";
 import { Toast } from "@/components/ui/Toast";
-
-const NAV = [
-  { icon: "fa-house", label: "Dashboard", href: "/claimant" },
-  { icon: "fa-file-invoice", label: "My Claims", href: "/claimant/claims" },
-];
 
 export default function NewClaimPage() {
   const [category, setCategory] = useState("MEDICAL");
@@ -36,7 +32,7 @@ export default function NewClaimPage() {
       }
       const claim = await res.json();
 
-      // Claim exists now — attach the selected evidence file, if any. A failed
+      // Claim exists now â€” attach the selected evidence file, if any. A failed
       // upload here shouldn't be reported as a failed submission (the claim
       // itself is already saved); surface it as a distinct warning instead.
       if (file) {
@@ -66,7 +62,7 @@ export default function NewClaimPage() {
 
   return (
     <div className="flex bg-slate-50 min-h-screen">
-      <Sidebar brand="CLAIMS PRO" items={NAV} active="Dashboard" dark={false} />
+      <Sidebar brand="CLAIMS PRO" items={CLAIMANT_NAV} active="Dashboard" dark={false} />
 
       <main className="flex-1 p-12">
         <header className="mb-12">

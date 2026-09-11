@@ -5,13 +5,14 @@ import { NotificationService } from "@/services/notification.service";
 
 const notificationService = new NotificationService();
 
-// PATCH /api/notifications/:id — mark as read
-export async function PATCH(_req: NextRequest, { params }: { params: { id: string } }) {
+// PATCH /api/notifications/:id â€” mark as read
+export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    await notificationService.markRead(params.id, session.user.id);
+    await notificationService.markRead(id, session.user.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Failed to mark notification read:", err);

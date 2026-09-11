@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { validateEnv } from "./env";
+
+validateEnv();
 
 // Singleton pattern: prevents exhausting DB connections from hot-reloaded
 // serverless functions in dev, and keeps one client per Lambda instance in prod.

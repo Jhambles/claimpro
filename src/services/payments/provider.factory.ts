@@ -2,6 +2,7 @@ import { PaymentProvider } from "@prisma/client";
 import { IPaymentProvider } from "./provider.interface";
 import { GcashProvider, MayaProvider } from "./paymongo.provider";
 import { PaypalProvider } from "./paypal.provider";
+import { BankTransferProvider } from "./bank-transfer.provider";
 
 // Factory Method: isolates the mapping of "provider name" -> concrete class.
 // PaymentService never instantiates a provider class directly, so adding a
@@ -14,6 +15,8 @@ export function getPaymentProvider(name: PaymentProvider): IPaymentProvider {
       return new MayaProvider();
     case "PAYPAL":
       return new PaypalProvider();
+    case "BANK_TRANSFER":
+      return new BankTransferProvider();
     default:
       throw new Error(`Unsupported payment provider: ${name}`);
   }

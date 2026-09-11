@@ -12,11 +12,33 @@ const CATEGORY_LABEL: Record<string, string> = {
   HOMEOWNERS: "Homeowners Protection",
 };
 
-const PROVIDERS: { key: "GCASH" | "MAYA" | "PAYPAL"; label: string; color: string }[] = [
+const PROVIDERS: { key: "GCASH" | "MAYA" | "PAYPAL" | "BANK_TRANSFER"; label: string; color: string }[] = [
   { key: "GCASH", label: "GCash", color: "bg-[#007cff]" },
   { key: "MAYA", label: "Maya", color: "bg-[#00c56d]" },
   { key: "PAYPAL", label: "PayPal", color: "bg-[#003087]" },
+  { key: "BANK_TRANSFER", label: "Bank Transfer", color: "bg-slate-700" },
 ];
+
+const PH_BANKS = [
+  "BDO Unibank",
+  "Bank of the Philippine Islands (BPI)",
+  "Metrobank",
+  "Landbank",
+  "Philippine National Bank (PNB)",
+  "Security Bank",
+  "UnionBank",
+  "RCBC",
+  "China Bank",
+  "EastWest Bank",
+  "Other Bank",
+];
+
+const PROVIDER_LABEL: Record<string, string> = {
+  GCASH: "GCash",
+  MAYA: "Maya",
+  PAYPAL: "PayPal",
+  BANK_TRANSFER: "Bank Transfer",
+};
 
 export default function ClaimDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +50,12 @@ export default function ClaimDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [payoutAmount, setPayoutAmount] = useState("500");
+  const [showBankForm, setShowBankForm] = useState(false);
+  const [bankChoice, setBankChoice] = useState(PH_BANKS[0]);
+  const [otherBankName, setOtherBankName] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [submittingBank, setSubmittingBank] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -45,9 +73,30 @@ export default function ClaimDetailPage() {
   }
 
   useEffect(() => {
+    // Same as above: fetching this claim's data can only happen after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    // Only claimants have a saved payout preference (set from Settings) â€”
+    // staff viewing someone else's claim have nothing to pre-fill from.
+    // This is a convenience pre-fill, not critical, so failures are silent.
+    if (session?.user?.role !== "CLIENT") return;
+    fetch("/api/settings/payout-preference")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((pref) => {
+        if (pref?.provider === "BANK_TRANSFER" && pref.bankName) {
+          const isKnownBank = PH_BANKS.slice(0, -1).includes(pref.bankName);
+          setBankChoice(isKnownBank ? pref.bankName : "Other Bank");
+          if (!isKnownBank) setOtherBankName(pref.bankName);
+          setAccountName(pref.accountName ?? "");
+          setAccountNumber(pref.accountNumber ?? "");
+        }
+      })
+      .catch(() => {});
+  }, [session?.user?.role]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -80,7 +129,7 @@ export default function ClaimDetailPage() {
     load();
   }
 
-  async function claimPayout(provider: "GCASH" | "MAYA" | "PAYPAL") {
+  async function claimPayout(provider: "GCASH" | "MAYA" | "PAYPAL" | "BANK_TRANSFER", bankDetails?: { bankName: string; accountName: string; accountNumber: string }) {
     const amount = parseFloat(payoutAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
       setError("Enter a valid payout amount before claiming.");
@@ -89,7 +138,7 @@ export default function ClaimDetailPage() {
     const res = await fetch(`/api/claims/${id}/payments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider, amount }),
+      body: JSON.stringify({ provider, amount, ...bankDetails }),
     });
     if (!res.ok) {
       const body = await res.json();
@@ -97,21 +146,37 @@ export default function ClaimDetailPage() {
       return;
     }
     const { redirectUrl } = await res.json();
+    // This is a page navigation via the browser's Location API, not a
+    // mutation of a captured variable â€” the rule's static analysis can't
+    // distinguish the two.
+    // eslint-disable-next-line react-hooks/immutability
     window.location.href = redirectUrl;
+  }
+
+  async function submitBankTransfer() {
+    const bankName = bankChoice === "Other Bank" ? otherBankName.trim() : bankChoice;
+    if (!bankName || !accountName.trim() || !accountNumber.trim()) {
+      setError("Please fill in the bank name, account name, and account number.");
+      return;
+    }
+    setSubmittingBank(true);
+    setError(null);
+    await claimPayout("BANK_TRANSFER", { bankName, accountName: accountName.trim(), accountNumber: accountNumber.trim() });
+    setSubmittingBank(false);
   }
 
   async function viewLoa() {
     // Open the window synchronously, in direct response to the click, before
-    // any await — otherwise browsers treat the later window.open() as a
+    // any await â€” otherwise browsers treat the later window.open() as a
     // non-user-initiated popup and silently block it. Also: pass NO features
-    // string here — even "noopener" as the 3rd arg makes Chrome/Firefox treat
+    // string here â€” even "noopener" as the 3rd arg makes Chrome/Firefox treat
     // this as a popup-style window request instead of a plain tab, which
     // triggers much stricter blocking. Sever window.opener via the property
     // instead, right after opening, for the same protection without that cost.
     const w = window.open("", "_blank");
     if (w) {
       w.opener = null;
-      w.document.write("<p style='font-family:sans-serif;padding:40px;color:#64748b;'>Generating your Letter of Authorization…</p>");
+      w.document.write("<p style='font-family:sans-serif;padding:40px;color:#64748b;'>Generating your Letter of Authorizationâ€¦</p>");
     }
 
     const res = await fetch(`/api/claims/${id}/loa`, { method: "POST" });
@@ -127,11 +192,11 @@ export default function ClaimDetailPage() {
       return;
     }
     w.document.open();
-    w.document.write(buildLoaHtml(loa.content, loa.qrCodeDataUrl, loa.payoutUrl));
+    w.document.write(buildLoaHtml(loa.content, loa.qrCodeDataUrl, loa.payoutUrl, loa.providerLabel));
     w.document.close();
   }
 
-  if (loading) return <div className="p-12 text-slate-400">Loading claim…</div>;
+  if (loading) return <div className="p-12 text-slate-400">Loading claimâ€¦</div>;
   if (!claim) return <div className="p-12 text-slate-400">{loadError ?? "Claim not found."}</div>;
 
   const role = session?.user?.role;
@@ -165,6 +230,22 @@ export default function ClaimDetailPage() {
               <p className="font-bold text-navy">{new Date(claim.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "2-digit" })}</p>
             </div>
           </div>
+
+          {claim.issues && claim.issues.length > 0 && (
+            <div className="mb-8 space-y-2">
+              {claim.issues.map((issue) => (
+                <div
+                  key={issue.code}
+                  className={`flex items-start gap-3 p-4 rounded-xl text-sm ${
+                    issue.severity === "blocking" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  <i className={`fa-solid ${issue.severity === "blocking" ? "fa-circle-exclamation" : "fa-triangle-exclamation"} mt-0.5`} />
+                  <span>{issue.message}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {isStaff && (
             <div className="flex gap-3 mb-8">
@@ -205,7 +286,7 @@ export default function ClaimDetailPage() {
           {isOwner && (
             <label className="border-2 border-dashed border-slate-200 rounded-2xl py-10 flex flex-col items-center justify-center text-slate-400 bg-slate-50 hover:bg-white hover:border-teal cursor-pointer transition-all">
               <i className="fa-solid fa-cloud-arrow-up text-3xl mb-2" />
-              <p className="text-sm font-bold">{uploading ? "Uploading…" : "Click to upload a document"}</p>
+              <p className="text-sm font-bold">{uploading ? "Uploadingâ€¦" : "Click to upload a document"}</p>
               <p className="text-xs mt-1 italic">Maximum file size: 10MB (PDF, PNG, JPG)</p>
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" className="hidden" onChange={handleUpload} disabled={uploading} />
             </label>
@@ -215,7 +296,7 @@ export default function ClaimDetailPage() {
         {isOwner && claim.status === "APPROVED" && (
           <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-10">
             <h2 className="text-xl font-bold text-navy mb-2">Claim Your Payout</h2>
-            <p className="text-slate-500 text-sm mb-6">Your claim was approved for disbursement — choose how you'd like to receive it.</p>
+            <p className="text-slate-500 text-sm mb-6">Your claim was approved for disbursement â€” choose how you&apos;d like to receive it.</p>
 
             <div className="mb-6 max-w-xs">
               <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">Amount (PHP)</label>
@@ -227,13 +308,77 @@ export default function ClaimDetailPage() {
               />
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap">
               {PROVIDERS.map((p) => (
-                <button key={p.key} onClick={() => claimPayout(p.key)} className={`${p.color} text-white px-6 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition`}>
+                <button
+                  key={p.key}
+                  onClick={() => (p.key === "BANK_TRANSFER" ? setShowBankForm((v) => !v) : claimPayout(p.key))}
+                  className={`${p.color} text-white px-6 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition`}
+                >
                   Claim via {p.label}
                 </button>
               ))}
             </div>
+
+            {showBankForm && (
+              <div className="mt-6 max-w-md bg-slate-50 border border-slate-100 rounded-2xl p-6">
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-4">Bank Details</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">Bank</label>
+                    <select
+                      value={bankChoice}
+                      onChange={(e) => setBankChoice(e.target.value)}
+                      className="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none focus:border-teal"
+                    >
+                      {PH_BANKS.map((b) => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {bankChoice === "Other Bank" && (
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">Bank Name</label>
+                      <input
+                        type="text"
+                        value={otherBankName}
+                        onChange={(e) => setOtherBankName(e.target.value)}
+                        placeholder="Enter your bank's name"
+                        className="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none focus:border-teal"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">Account Name</label>
+                    <input
+                      type="text"
+                      value={accountName}
+                      onChange={(e) => setAccountName(e.target.value)}
+                      placeholder="Full name on the account"
+                      className="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none focus:border-teal"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">Account Number</label>
+                    <input
+                      type="text"
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
+                      placeholder="Bank account number"
+                      className="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none focus:border-teal"
+                    />
+                  </div>
+                  <button
+                    onClick={submitBankTransfer}
+                    disabled={submittingBank}
+                    className="w-full bg-navy text-white py-3 rounded-xl font-bold text-sm hover:bg-teal transition disabled:opacity-50"
+                  >
+                    {submittingBank ? "Submittingâ€¦" : "Submit Bank Transfer Request"}
+                  </button>
+                  <p className="text-slate-400 text-xs italic">Payouts by bank transfer are verified manually by our team and may take 1â€“3 business days.</p>
+                </div>
+              </div>
+            )}
 
             {claim.payments && claim.payments.length > 0 && (
               <div className="mt-8">
@@ -241,7 +386,12 @@ export default function ClaimDetailPage() {
                 <ul className="space-y-2">
                   {claim.payments.map((p) => (
                     <li key={p.id} className="flex justify-between text-sm border-b border-slate-50 pb-2">
-                      <span>{p.provider} &middot; PHP {parseFloat(p.amount).toLocaleString()}</span>
+                      <span>
+                        {PROVIDER_LABEL[p.provider] ?? p.provider} &middot; PHP {parseFloat(p.amount).toLocaleString()}
+                        {p.provider === "BANK_TRANSFER" && p.bankName && (
+                          <span className="text-slate-400"> ({p.bankName} â€” {p.accountNumber})</span>
+                        )}
+                      </span>
                       <StatusBadge status={p.status} />
                     </li>
                   ))}

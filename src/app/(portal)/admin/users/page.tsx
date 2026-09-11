@@ -1,13 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Sidebar } from "@/components/ui/Sidebar";
-
-const NAV = [
-  { icon: "fa-chart-line", label: "Analytics Engine", href: "/admin" },
-  { icon: "fa-users", label: "Identity Manager", href: "/admin/users" },
-  { icon: "fa-shield-halved", label: "Security Logs", href: "#", disabled: true },
-  { icon: "fa-code-branch", label: "API Endpoints", href: "#", disabled: true },
-];
+import { getAdminNav } from "@/lib/adminNav";
 
 interface AdminUser {
   id: string;
@@ -18,6 +13,7 @@ interface AdminUser {
 }
 
 export default function IdentityManagerPage() {
+  const { data: session } = useSession();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "CLIENT" as AdminUser["role"] });
@@ -32,6 +28,11 @@ export default function IdentityManagerPage() {
   }
 
   useEffect(() => {
+    // Standard client-side data fetch on mount â€” this rule targets state
+    // that could be computed synchronously during render instead; there's
+    // no way to have this data (a server response) at render time, so an
+    // effect + setState is the correct, unavoidable pattern here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
 
@@ -55,7 +56,7 @@ export default function IdentityManagerPage() {
 
   return (
     <div className="bg-navy min-h-screen text-white flex">
-      <Sidebar brand="ADMIN CORE" items={NAV} active="Identity Manager" />
+      <Sidebar brand="ADMIN CORE" items={getAdminNav(session?.user?.role)} active="Identity Manager" />
 
       <main className="flex-1 p-16">
         <h1 className="text-5xl font-black mb-2 tracking-tighter">Identity Manager</h1>
@@ -99,7 +100,7 @@ export default function IdentityManagerPage() {
             disabled={creating}
             className="bg-teal text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition disabled:opacity-50"
           >
-            {creating ? "Creating…" : "Create Account"}
+            {creating ? "Creatingâ€¦" : "Create Account"}
           </button>
         </div>
 

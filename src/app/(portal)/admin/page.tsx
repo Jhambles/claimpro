@@ -1,17 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { StatCard } from "@/components/ui/StatCard";
+import { getAdminNav } from "@/lib/adminNav";
 import { SystemStats } from "@/types";
 
-const NAV = [
-  { icon: "fa-chart-line", label: "Analytics Engine", href: "/admin" },
-  { icon: "fa-users", label: "Identity Manager", href: "/admin/users" },
-  { icon: "fa-shield-halved", label: "Security Logs", href: "#", disabled: true },
-  { icon: "fa-code-branch", label: "API Endpoints", href: "#", disabled: true },
-];
-
 export default function AdminDashboardPage() {
+  const { data: session } = useSession();
   const [stats, setStats] = useState<SystemStats | null>(null);
 
   useEffect(() => {
@@ -28,7 +24,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="bg-navy min-h-screen text-white flex">
-      <Sidebar brand="ADMIN CORE" items={NAV} active="Analytics Engine" />
+      <Sidebar brand="ADMIN CORE" items={getAdminNav(session?.user?.role)} active="Analytics Engine" />
 
       <main className="flex-1 p-16">
         <div className="flex justify-between items-start mb-16">
@@ -43,9 +39,9 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="grid grid-cols-3 gap-8 mb-16">
-          <StatCard label="Total Requests" value={stats ? stats.totalRequests.toLocaleString() : "—"} />
-          <StatCard label="Approval Rate" value={stats ? `${stats.approvalRate}%` : "—"} sub="Of all submitted claims" />
-          <StatCard label="LOA Gen Rate" value={stats ? `${stats.loaGenerationRate}%` : "—"} sub="Of approved claims" subClass="text-green-500" />
+          <StatCard label="Total Requests" value={stats ? stats.totalRequests.toLocaleString() : "â€”"} />
+          <StatCard label="Approval Rate" value={stats ? `${stats.approvalRate}%` : "â€”"} sub="Of all submitted claims" />
+          <StatCard label="LOA Gen Rate" value={stats ? `${stats.loaGenerationRate}%` : "â€”"} sub="Of approved claims" subClass="text-green-500" />
         </div>
 
         <div className="bg-white/5 p-12 rounded-[3rem] border border-white/10">

@@ -9,8 +9,14 @@ interface Message {
 
 // Floating support chatbot ("Clai") available across every authenticated
 // portal page. Calls /api/chat, which uses the Claude API when configured
-// and otherwise falls back to a friendly rule-based FAQ responder — either
+// and otherwise falls back to a friendly rule-based FAQ responder â€” either
 // way, replies use a light touch of emoji as requested.
+//
+// Rendered with key={userId} by PortalChrome so that switching logged-in
+// accounts fully remounts this component (resetting messages, open state,
+// everything) rather than leaving a previous account's chat history in
+// memory â€” /api/chat itself is correctly scoped per-user server-side, but
+// this component can otherwise stay mounted across a login switch.
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,12 +32,12 @@ export function ChatWidget() {
           if (Array.isArray(history) && history.length > 0) {
             setMessages(history);
           } else {
-            setMessages([{ role: "assistant", content: "Hey! 👋 I'm Clai, your ClaimsPro assistant. Ask me anything about claims, LOAs, or payments!" }]);
+            setMessages([{ role: "assistant", content: "Hey! ðŸ‘‹ I'm Clai, your ClaimsPro assistant. Ask me anything about claims, LOAs, or payments!" }]);
           }
         })
         .catch((err) => {
           console.error("Clai: failed to load chat history", err);
-          setMessages([{ role: "assistant", content: "Hey! 👋 I'm Clai. (Couldn't load earlier messages, but go ahead and ask something!)" }]);
+          setMessages([{ role: "assistant", content: "Hey! ðŸ‘‹ I'm Clai. (Couldn't load earlier messages, but go ahead and ask something!)" }]);
         });
     }
   }, [open, messages.length]);
@@ -58,10 +64,10 @@ export function ChatWidget() {
         throw new Error(body.error ? JSON.stringify(body.error) : `Request failed: ${res.status}`);
       }
       const data = await res.json();
-      setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "Sorry, I couldn't respond just now 😅" }]);
+      setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "Sorry, I couldn't respond just now ðŸ˜…" }]);
     } catch (err) {
       console.error("Clai: send failed", err);
-      setMessages((m) => [...m, { role: "assistant", content: "Something went wrong on my end 😅 Please try again." }]);
+      setMessages((m) => [...m, { role: "assistant", content: "Something went wrong on my end ðŸ˜… Please try again." }]);
     } finally {
       setSending(false);
     }
@@ -73,8 +79,8 @@ export function ChatWidget() {
         <div className="w-80 h-[28rem] bg-white rounded-3xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden mb-4">
           <div className="bg-navy text-white px-5 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-lg">🤖</span>
-              <span className="font-bold text-sm">Clai · Support</span>
+              <span className="text-lg">ðŸ¤–</span>
+              <span className="font-bold text-sm">Clai Â· Support</span>
             </div>
             <button onClick={() => setOpen(false)} className="text-slate-300 hover:text-white">
               <i className="fa-solid fa-xmark" />
@@ -93,7 +99,7 @@ export function ChatWidget() {
                 </div>
               </div>
             ))}
-            {sending && <div className="text-xs text-slate-400 italic">Clai is typing… 💭</div>}
+            {sending && <div className="text-xs text-slate-400 italic">Clai is typingâ€¦ ðŸ’­</div>}
             <div ref={endRef} />
           </div>
 
@@ -102,7 +108,7 @@ export function ChatWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
-              placeholder="Ask about your claim…"
+              placeholder="Ask about your claimâ€¦"
               className="flex-1 px-4 py-2 rounded-full bg-slate-50 border border-slate-100 outline-none focus:border-teal text-sm"
             />
             <button onClick={send} className="w-10 h-10 rounded-full bg-navy text-white flex items-center justify-center hover:bg-teal transition">
@@ -116,7 +122,7 @@ export function ChatWidget() {
         onClick={() => setOpen((o) => !o)}
         className="w-14 h-14 rounded-full bg-teal text-white shadow-xl flex items-center justify-center text-2xl hover:scale-105 transition"
       >
-        {open ? <i className="fa-solid fa-xmark" /> : "💬"}
+        {open ? <i className="fa-solid fa-xmark" /> : <i className="fa-solid fa-comment-dots" />}
       </button>
     </div>
   );

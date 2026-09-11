@@ -11,16 +11,17 @@ const createClaimSchema = z.object({
   estimate: z.number().positive(),
 });
 
-// GET /api/claims — list claims (own claims for CLIENT, full queue for staff)
+// GET /api/claims â€” list claims (own claims for CLIENT, full queue for staff)
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const claims = await claimService.listClaimsFor(session.user);
-  return NextResponse.json(claims);
+  const withIssues = claims.map((c) => ({ ...c, issues: claimService.getValidationIssues(c) }));
+  return NextResponse.json(withIssues);
 }
 
-// POST /api/claims — submit a new claim (CLIENT only)
+// POST /api/claims â€” submit a new claim (CLIENT only)
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -2,14 +2,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sidebar } from "@/components/ui/Sidebar";
+import { CLAIMANT_NAV } from "@/lib/claimantNav";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { buildLoaHtml } from "@/lib/loaDocument";
 import { ClaimDTO } from "@/types";
-
-const NAV = [
-  { icon: "fa-house", label: "Dashboard", href: "/claimant" },
-  { icon: "fa-file-invoice", label: "My Claims", href: "/claimant/claims" },
-];
 
 export default function ClaimsHistoryPage() {
   const [claims, setClaims] = useState<ClaimDTO[]>([]);
@@ -25,16 +21,16 @@ export default function ClaimsHistoryPage() {
 
   async function viewLoa(claimId: string) {
     // Open the window synchronously, in direct response to the click, before
-    // any await — otherwise browsers treat the later window.open() as a
+    // any await â€” otherwise browsers treat the later window.open() as a
     // non-user-initiated popup and silently block it. Also: pass NO features
-    // string here — even "noopener" as the 3rd arg makes Chrome/Firefox treat
+    // string here â€” even "noopener" as the 3rd arg makes Chrome/Firefox treat
     // this as a popup-style window request instead of a plain tab, which
     // triggers much stricter blocking. Sever window.opener via the property
     // instead, right after opening, for the same protection without that cost.
     const w = window.open("", "_blank");
     if (w) {
       w.opener = null;
-      w.document.write("<p style='font-family:sans-serif;padding:40px;color:#64748b;'>Generating your Letter of Authorization…</p>");
+      w.document.write("<p style='font-family:sans-serif;padding:40px;color:#64748b;'>Generating your Letter of Authorizationâ€¦</p>");
     }
 
     const res = await fetch(`/api/claims/${claimId}/loa`, { method: "POST" });
@@ -50,7 +46,7 @@ export default function ClaimsHistoryPage() {
       return;
     }
     w.document.open();
-    w.document.write(buildLoaHtml(loa.content, loa.qrCodeDataUrl, loa.payoutUrl));
+    w.document.write(buildLoaHtml(loa.content, loa.qrCodeDataUrl, loa.payoutUrl, loa.providerLabel));
     w.document.close();
   }
 
@@ -58,7 +54,7 @@ export default function ClaimsHistoryPage() {
 
   return (
     <div className="flex bg-slate-50 min-h-screen">
-      <Sidebar brand="CLAIMS PRO" items={NAV} active="My Claims" dark={false} />
+      <Sidebar brand="CLAIMS PRO" items={CLAIMANT_NAV} active="My Claims" dark={false} />
 
       <main className="flex-1 p-12">
         <header className="flex justify-between items-end mb-12">

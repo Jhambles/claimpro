@@ -11,8 +11,7 @@ const ICON: Record<string, string> = {
 };
 
 function homeForRole(role?: string) {
-  if (role === "PROCESSOR") return "/processor";
-  if (role === "ADMIN") return "/admin";
+  if (role === "PROCESSOR" || role === "ADMIN") return "/admin";
   return "/claimant/claims";
 }
 
@@ -32,6 +31,7 @@ export function NotificationBell() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
@@ -68,7 +68,7 @@ export function NotificationBell() {
         <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-50 font-bold text-navy text-sm">Notifications</div>
           <div className="max-h-96 overflow-y-auto divide-y divide-slate-50">
-            {items.length === 0 && <p className="p-6 text-center text-slate-400 text-sm">You're all caught up.</p>}
+            {items.length === 0 && <p className="p-6 text-center text-slate-400 text-sm">You&apos;re all caught up.</p>}
             {items.map((n) => (
               <button
                 key={n.id}

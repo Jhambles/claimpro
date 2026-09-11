@@ -5,10 +5,10 @@ import { StatsService } from "@/services/stats.service";
 
 const statsService = new StatsService();
 
-// GET /api/admin/stats — powers the Admin "System Health" dashboard
+// GET /api/admin/stats â€” powers the shared Admin/Processor dashboard's "System Health" view
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "PROCESSOR")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
