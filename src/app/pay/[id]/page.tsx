@@ -52,7 +52,7 @@ export default function MockCheckoutPage() {
           </span>
           <h1 className="text-2xl font-bold text-slate-800 mb-2">Bank Transfer Submitted</h1>
           <p className="text-slate-400 text-sm">
-            Your bank details have been recorded. Our team will verify the deposit and update your claim â€” you&apos;ll get a notification once it&apos;s processed.
+            Your bank details have been recorded. Our team will verify the deposit and update your claim - you&apos;ll get a notification once it&apos;s processed.
           </p>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function MockCheckoutPage() {
             disabled={loading}
             className="w-full border border-slate-200 text-slate-500 py-4 rounded-xl font-bold hover:bg-slate-50 transition disabled:opacity-50"
           >
-            {isBankTransfer ? "Reject â€” No Deposit Found" : "Simulate Failed Payout"}
+            {isBankTransfer ? "Reject - No Deposit Found" : "Simulate Failed Payout"}
           </button>
         </div>
       </div>

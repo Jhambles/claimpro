@@ -30,7 +30,7 @@ export class ClaimValidationService {
       issues.push({
         code: "NO_PHOTO_EVIDENCE",
         severity: "warning",
-        message: "No photographic evidence has been uploaded â€” only non-image documents are on file.",
+        message: "No photographic evidence has been uploaded - only non-image documents are on file.",
       });
     }
 
@@ -74,7 +74,7 @@ export class ClaimValidationService {
       issues.push({
         code: "MULTIPLE_PENDING_PAYOUTS",
         severity: "warning",
-        message: `Payout requests are pending across ${pendingProviders.size} different methods (${[...pendingProviders].join(", ")}) â€” confirm only one is actually completed to avoid a double payout.`,
+        message: `Payout requests are pending across ${pendingProviders.size} different methods (${[...pendingProviders].join(", ")}) - confirm only one is actually completed to avoid a double payout.`,
       });
     }
 
@@ -93,7 +93,7 @@ export class ClaimValidationService {
         issues.push({
           code: "STALE_CLAIM",
           severity: "warning",
-          message: `This claim has had no status update in ${Math.floor(ageDays)} days â€” verify the information on file is still current before acting on it.`,
+          message: `This claim has had no status update in ${Math.floor(ageDays)} days - verify the information on file is still current before acting on it.`,
         });
       }
     }

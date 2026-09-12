@@ -76,7 +76,7 @@ export default function VerificationQueuePage() {
                         {c.issues.length} flag{c.issues.length > 1 ? "s" : ""}
                       </span>
                     ) : (
-                      <span className="text-slate-600 text-xs">â€”</span>
+                      <span className="text-slate-600 text-xs">N/A</span>
                     )}
                   </td>
                   <td className="p-6 text-center space-x-2">

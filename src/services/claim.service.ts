@@ -80,7 +80,7 @@ export class ClaimService {
       const blocking = this.validation.evaluate(claim).filter((i) => i.severity === "blocking");
       if (blocking.length > 0) {
         throw new ServiceError(
-          `Cannot approve this claim â€” unresolved issues: ${blocking.map((i) => i.message).join(" ")}`,
+          `Cannot approve this claim - unresolved issues: ${blocking.map((i) => i.message).join(" ")}`,
           422
         );
       }

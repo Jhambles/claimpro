@@ -39,9 +39,9 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="grid grid-cols-3 gap-8 mb-16">
-          <StatCard label="Total Requests" value={stats ? stats.totalRequests.toLocaleString() : "â€”"} />
-          <StatCard label="Approval Rate" value={stats ? `${stats.approvalRate}%` : "â€”"} sub="Of all submitted claims" />
-          <StatCard label="LOA Gen Rate" value={stats ? `${stats.loaGenerationRate}%` : "â€”"} sub="Of approved claims" subClass="text-green-500" />
+          <StatCard label="Total Requests" value={stats ? stats.totalRequests.toLocaleString() : "N/A"} />
+          <StatCard label="Approval Rate" value={stats ? `${stats.approvalRate}%` : "N/A"} sub="Of all submitted claims" />
+          <StatCard label="LOA Gen Rate" value={stats ? `${stats.loaGenerationRate}%` : "N/A"} sub="Of approved claims" subClass="text-green-500" />
         </div>
 
         <div className="bg-white/5 p-12 rounded-[3rem] border border-white/10">

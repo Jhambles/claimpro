@@ -49,12 +49,7 @@ export class PaymentService {
       ...(provider === "BANK_TRANSFER" ? bankDetails : {}),
     });
 
-    const strategy = getPaymentProvider(provider);
-    const checkout = await strategy.createCheckout({
-      paymentId: payment.id,
-      amount,
-      description: `ClaimsPro â€” ${claim.referenceId}`,
-    });
+    const checkout = await this.createCheckoutSafely(provider, payment.id, amount, claim.referenceId);
 
     if (actor) {
       await this.audit.log({
@@ -93,14 +88,30 @@ export class PaymentService {
         ...(provider === "BANK_TRANSFER" && bankDetails ? bankDetails : {}),
       }));
 
-    const strategy = getPaymentProvider(provider);
-    const checkout = await strategy.createCheckout({
-      paymentId: payment.id,
-      amount: Number(payment.amount),
-      description: `ClaimsPro â€” ${claim.referenceId}`,
-    });
+    const checkout = await this.createCheckoutSafely(provider, payment.id, Number(payment.amount), claim.referenceId);
 
     return { paymentId: payment.id, redirectUrl: checkout.redirectUrl };
+  }
+
+  // Wraps a gateway's createCheckout call so a failure (invalid/expired API
+  // key, network error, gateway rejecting the request) becomes a clean,
+  // actionable ServiceError instead of an unhandled exception that crashes
+  // the request into an opaque 500 with no useful message for the caller.
+  private async createCheckoutSafely(provider: PaymentProvider, paymentId: string, amount: number, referenceId: string) {
+    const strategy = getPaymentProvider(provider);
+    try {
+      return await strategy.createCheckout({
+        paymentId,
+        amount,
+        description: `ClaimsPro - ${referenceId}`,
+      });
+    } catch (err) {
+      console.error(`Checkout creation failed for provider ${provider}:`, err);
+      throw new ServiceError(
+        `Could not start a ${provider} checkout right now. This usually means the payment gateway credentials in .env are invalid or misconfigured - check PAYMONGO_SECRET_KEY / PAYPAL_CLIENT_ID, or remove them to use the sandbox mock checkout instead.`,
+        502
+      );
+    }
   }
 
   async confirmPayment(paymentId: string, success: boolean, actor?: { role: string }) {

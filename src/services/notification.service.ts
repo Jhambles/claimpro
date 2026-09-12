@@ -10,7 +10,7 @@ export class NotificationService {
   notifyStatusChange(userId: string, referenceId: string, status: string, claimId: string) {
     const messages: Record<string, string> = {
       VERIFIED: `Your claim ${referenceId} has been verified and is awaiting final approval.`,
-      APPROVED: `Great news — claim ${referenceId} has been approved.`,
+      APPROVED: `Great news - claim ${referenceId} has been approved.`,
       REJECTED: `Claim ${referenceId} was not approved. You can view details in your claims history.`,
     };
     const message = messages[status] ?? `Claim ${referenceId} status changed to ${status}.`;
@@ -20,7 +20,7 @@ export class NotificationService {
   notifyPayment(userId: string, referenceId: string, status: string, claimId: string) {
     const message =
       status === "PAID"
-        ? `Your payout for claim ${referenceId} has been claimed successfully. 🎉`
+        ? `Your payout for claim ${referenceId} has been claimed successfully. ðŸŽ‰`
         : `We couldn't complete your payout claim for ${referenceId}. Please try again.`;
     return this.notifications.createForUser(userId, "PAYMENT", message, claimId);
   }

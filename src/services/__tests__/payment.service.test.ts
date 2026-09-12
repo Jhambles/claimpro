@@ -1,5 +1,6 @@
 import { PaymentService } from "@/services/payment.service";
 import { ServiceError } from "@/services/claim.service";
+import { getPaymentProvider } from "@/services/payments/provider.factory";
 
 jest.mock("@/services/payments/provider.factory", () => ({
   getPaymentProvider: jest.fn(() => ({
@@ -157,5 +158,33 @@ describe("PaymentService.confirmPayment", () => {
     const service = new PaymentService(paymentRepo as any, claimRepo, notifications, audit);
 
     await expect(service.confirmPayment("nope", true)).rejects.toMatchObject({ statusCode: 404 });
+  });
+});
+
+describe("PaymentService gateway failure handling", () => {
+  it("converts a raw gateway error (e.g. an invalid PayMongo API key) into a clean ServiceError instead of an unhandled crash", async () => {
+    (getPaymentProvider as jest.Mock).mockReturnValue({
+      createCheckout: jest.fn().mockRejectedValue(new Error("PayMongo checkout failed: 401 Unauthorized")),
+    });
+
+    const claim = makeApprovedClaim();
+    const { paymentRepo, claimRepo, notifications, audit } = makeMocks(claim);
+    const service = new PaymentService(paymentRepo as any, claimRepo, notifications, audit);
+
+    await expect(service.getOrCreateCheckoutForClaim("claim_1", "GCASH", 500)).rejects.toMatchObject({
+      statusCode: 502,
+    });
+  });
+
+  it("same protection applies to the manual startCheckout flow", async () => {
+    (getPaymentProvider as jest.Mock).mockReturnValueOnce({
+      createCheckout: jest.fn().mockRejectedValue(new Error("network error")),
+    });
+
+    const claim = makeApprovedClaim();
+    const { paymentRepo, claimRepo, notifications, audit } = makeMocks(claim);
+    const service = new PaymentService(paymentRepo as any, claimRepo, notifications, audit);
+
+    await expect(service.startCheckout("claim_1", "MAYA", 500)).rejects.toMatchObject({ statusCode: 502 });
   });
 });

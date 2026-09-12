@@ -296,7 +296,7 @@ export default function ClaimDetailPage() {
         {isOwner && claim.status === "APPROVED" && (
           <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-10">
             <h2 className="text-xl font-bold text-navy mb-2">Claim Your Payout</h2>
-            <p className="text-slate-500 text-sm mb-6">Your claim was approved for disbursement â€” choose how you&apos;d like to receive it.</p>
+            <p className="text-slate-500 text-sm mb-6">Your claim was approved for disbursement - choose how you&apos;d like to receive it.</p>
 
             <div className="mb-6 max-w-xs">
               <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">Amount (PHP)</label>
@@ -389,7 +389,7 @@ export default function ClaimDetailPage() {
                       <span>
                         {PROVIDER_LABEL[p.provider] ?? p.provider} &middot; PHP {parseFloat(p.amount).toLocaleString()}
                         {p.provider === "BANK_TRANSFER" && p.bankName && (
-                          <span className="text-slate-400"> ({p.bankName} â€” {p.accountNumber})</span>
+                          <span className="text-slate-400"> ({p.bankName} - {p.accountNumber})</span>
                         )}
                       </span>
                       <StatusBadge status={p.status} />

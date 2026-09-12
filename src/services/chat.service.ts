@@ -8,7 +8,7 @@ platform. Help users understand how to submit claims, check claim status, genera
 Authorization once approved, and claim their payout via GCash, Maya, or PayPal once a claim is
 approved for disbursement. Keep answers short (2-4 sentences), warm, and sprinkle in a relevant
 emoji or two per message (not excessive). If asked something outside claims/insurance/the
-platform, gently redirect. Never invent claim statuses or amounts â€” tell the user to check their
+platform, gently redirect. Never invent claim statuses or amounts - tell the user to check their
 claims history for specifics.`;
 
 type Role = "CLIENT" | "PROCESSOR" | "ADMIN";
@@ -21,29 +21,29 @@ const COMMON_FAQ: { keywords: string[]; answer: string }[] = [
   { keywords: ["hi", "hello", "hey", "good morning", "good afternoon"], answer: "Hey there! ðŸ‘‹ I'm Clai, your ClaimsPro assistant. Ask me about claims, statuses, documents, LOAs, or payments!" },
   { keywords: ["thank", "thanks", "thx"], answer: "You're welcome! ðŸ˜Š Anything else I can help with?" },
   { keywords: ["bye", "goodbye", "see you"], answer: "Take care! ðŸ‘‹ Come back anytime you have a question." },
-  { keywords: ["who are you", "what are you", "what can you do", "help me", "how do you work"], answer: "I'm Clai ðŸ¤– â€” I can help explain how claims move through the system, and I can also look up your live counts â€” try asking 'how many claims do I have?' ðŸ“Š" },
-  { keywords: ["human", "agent", "real person", "representative"], answer: "I'm just a support bot for now, so I can't connect you to a live person ðŸ™ â€” for anything urgent, please reach out to your account contact directly." },
+  { keywords: ["who are you", "what are you", "what can you do", "help me", "how do you work"], answer: "I'm Clai ðŸ¤– - I can help explain how claims move through the system, and I can also look up your live counts - try asking 'how many claims do I have?' ðŸ“Š" },
+  { keywords: ["human", "agent", "real person", "representative"], answer: "I'm just a support bot for now, so I can't connect you to a live person ðŸ™ - for anything urgent, please reach out to your account contact directly." },
   { keywords: ["document", "upload", "evidence", "attach", "receipt", "file size"], answer: "You can attach evidence (PDF, PNG, or JPG, up to 10MB) when submitting a claim, or later from the claim's detail page ðŸ“Ž" },
-  { keywords: ["notification", "notify", "bell", "alert"], answer: "The ðŸ”” bell (top-right) shows updates whenever a claim status changes or a payment goes through â€” click one to mark it read." },
-  { keywords: ["renew", "renewal", "expire", "expiring"], answer: "Renewal reminders go out automatically as an approved policy nears its renewal window â€” keep an eye on your ðŸ”” notifications for that nudge." },
-  { keywords: ["login", "log in", "password", "sign in", "account locked", "forgot password"], answer: "If you're having trouble signing in, double check your email and password â€” for a reset, please contact your administrator for now ðŸ”‘" },
-  { keywords: ["medical", "hospitalization"], answer: "Medical Expense Coverage handles hospitalization and treatment-related costs â€” attach medical records or receipts when you submit ðŸ¥" },
-  { keywords: ["automotive", "car", "vehicle", "accident"], answer: "Automotive Damage claims cover accidental vehicle damage â€” photos and repair estimates make great supporting evidence ðŸš—" },
-  { keywords: ["home", "homeowner", "property"], answer: "Homeowners Protection covers property damage claims â€” receipts, photos, and any assessor reports help speed up verification ðŸ " },
+  { keywords: ["notification", "notify", "bell", "alert"], answer: "The ðŸ”” bell (top-right) shows updates whenever a claim status changes or a payment goes through - click one to mark it read." },
+  { keywords: ["renew", "renewal", "expire", "expiring"], answer: "Renewal reminders go out automatically as an approved policy nears its renewal window - keep an eye on your ðŸ”” notifications for that nudge." },
+  { keywords: ["login", "log in", "password", "sign in", "account locked", "forgot password"], answer: "If you're having trouble signing in, double check your email and password - for a reset, please contact your administrator for now ðŸ”‘" },
+  { keywords: ["medical", "hospitalization"], answer: "Medical Expense Coverage handles hospitalization and treatment-related costs - attach medical records or receipts when you submit ðŸ¥" },
+  { keywords: ["automotive", "car", "vehicle", "accident"], answer: "Automotive Damage claims cover accidental vehicle damage - photos and repair estimates make great supporting evidence ðŸš—" },
+  { keywords: ["home", "homeowner", "property"], answer: "Homeowners Protection covers property damage claims - receipts, photos, and any assessor reports help speed up verification ðŸ " },
 ];
 
 const CLIENT_FAQ: { keywords: string[]; answer: string }[] = [
   { keywords: ["submit", "new claim", "file a claim", "how to claim"], answer: "To submit a claim, go to your Claimant dashboard, pick a policy category, enter your estimate, attach your documents, then hit Submit for Verification ðŸ“âœ…" },
-  { keywords: ["loa", "letter of authorization"], answer: "Once your claim is Approved, a View LOA button appears in your claims history â€” click it to generate your Letter of Authorization ðŸ“„âœ¨" },
-  { keywords: ["pay", "gcash", "maya", "paypal", "bank", "payment", "payout", "claim my money", "disbursement"], answer: "Once your claim is approved, head to its detail page to claim your payout via GCash, Maya, PayPal, or bank transfer â€” or scan the QR code on your LOA to jump straight into a GCash checkout ðŸ’¸" },
+  { keywords: ["loa", "letter of authorization"], answer: "Once your claim is Approved, a View LOA button appears in your claims history - click it to generate your Letter of Authorization ðŸ“„âœ¨" },
+  { keywords: ["pay", "gcash", "maya", "paypal", "bank", "payment", "payout", "claim my money", "disbursement"], answer: "Once your claim is approved, head to its detail page to claim your payout via GCash, Maya, PayPal, or bank transfer - or scan the QR code on your LOA to jump straight into a GCash checkout ðŸ’¸" },
 ];
 
 const PROCESSOR_FAQ: { keywords: string[]; answer: string }[] = [
-  { keywords: ["queue"], answer: "Your Verification Queue lists every claim needing action, newest first â€” click a reference ID to see full details and documents ðŸ“‹" },
+  { keywords: ["queue"], answer: "Your Verification Queue lists every claim needing action, newest first - click a reference ID to see full details and documents ðŸ“‹" },
 ];
 
 const ADMIN_FAQ: { keywords: string[]; answer: string }[] = [
-  { keywords: ["add user", "create user", "create account", "new account", "provision"], answer: "Head to Identity Manager and use the 'Provision New Account' form â€” set a name, email, temporary password, and role ðŸ‘¤" },
+  { keywords: ["add user", "create user", "create account", "new account", "provision"], answer: "Head to Identity Manager and use the 'Provision New Account' form - set a name, email, temporary password, and role ðŸ‘¤" },
   { keywords: ["identity manager", "manage users", "user list"], answer: "Identity Manager (left sidebar) lists every account and lets you provision new Claimant, Processor, or Admin users ðŸ—‚ï¸" },
 ];
 
@@ -78,7 +78,7 @@ const clientCountHandler: DynamicHandler = async (message, ctx) => {
   const total = counts.PENDING + counts.VERIFIED + counts.APPROVED + counts.REJECTED;
 
   if (total === 0) {
-    return "You haven't submitted any claims yet ðŸ“ â€” head to New Claim Request to file your first one!";
+    return "You haven't submitted any claims yet ðŸ“ - head to New Claim Request to file your first one!";
   }
 
   if (lower.includes("approved")) {
@@ -116,7 +116,7 @@ const processorCountHandler: DynamicHandler = async (message, ctx) => {
     return `You currently have ${counts.VERIFIED} claim${counts.VERIFIED === 1 ? "" : "s"} you've verified and awaiting approval, out of ${handled} you've handled in total.`;
   }
 
-  return `You've handled ${handled} claim${handled === 1 ? "" : "s"} total â€” ${counts.VERIFIED} Verified (awaiting approval), ${counts.APPROVED} Approved, ${counts.REJECTED} Rejected. There ${pendingInQueue === 1 ? "is" : "are"} also ${pendingInQueue} claim${pendingInQueue === 1 ? "" : "s"} still Pending in the shared queue ðŸ“‹`;
+  return `You've handled ${handled} claim${handled === 1 ? "" : "s"} total - ${counts.VERIFIED} Verified (awaiting approval), ${counts.APPROVED} Approved, ${counts.REJECTED} Rejected. There ${pendingInQueue === 1 ? "is" : "are"} also ${pendingInQueue} claim${pendingInQueue === 1 ? "" : "s"} still Pending in the shared queue ðŸ“‹`;
 };
 
 const adminCountHandler: DynamicHandler = async (message, ctx) => {
@@ -151,7 +151,7 @@ function staticFallbackReply(message: string, role?: Role): string {
     if (match) return match.answer;
   }
 
-  return "I'm not totally sure about that one ðŸ¤” â€” try asking about submitting a claim, checking status, documents, LOAs, payments, or your live counts!";
+  return "I'm not totally sure about that one ðŸ¤” - try asking about submitting a claim, checking status, documents, LOAs, payments, or your live counts!";
 }
 
 export class ChatService {

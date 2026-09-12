@@ -70,7 +70,7 @@ export default function SecurityLogsPage() {
                       {ACTION_LABEL[log.action] ?? log.action}
                     </span>
                   </td>
-                  <td className="p-6 text-slate-300 text-sm">{log.detail ?? "â€”"}</td>
+                  <td className="p-6 text-slate-300 text-sm">{log.detail ?? "N/A"}</td>
                 </tr>
               ))}
               {!loading && logs.length === 0 && !error && (
