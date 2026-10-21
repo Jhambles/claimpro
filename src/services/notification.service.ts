@@ -7,13 +7,14 @@ import { PrismaNotificationRepository } from "@/repositories/notification.reposi
 export class NotificationService {
   constructor(private readonly notifications: INotificationRepository = new PrismaNotificationRepository()) {}
 
-  notifyStatusChange(userId: string, referenceId: string, status: string, claimId: string) {
+  notifyStatusChange(userId: string, referenceId: string, status: string, claimId: string, reason?: string) {
     const messages: Record<string, string> = {
       VERIFIED: `Your claim ${referenceId} has been verified and is awaiting final approval.`,
       APPROVED: `Great news - claim ${referenceId} has been approved.`,
       REJECTED: `Claim ${referenceId} was not approved. You can view details in your claims history.`,
     };
-    const message = messages[status] ?? `Claim ${referenceId} status changed to ${status}.`;
+    const base = messages[status] ?? `Claim ${referenceId} status changed to ${status}.`;
+    const message = reason ? `${base} Reason: ${reason}` : base;
     return this.notifications.createForUser(userId, "STATUS_UPDATE", message, claimId);
   }
 

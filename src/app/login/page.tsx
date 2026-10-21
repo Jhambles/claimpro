@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import Link from "next/link";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -12,9 +12,9 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const ROLE_REDIRECT: Record<string, string> = {
-  client: "/claimant",
-  processor: "/admin",
-  admin: "/admin",
+  CLIENT: "/claimant",
+  PROCESSOR: "/admin",
+  ADMIN: "/admin",
 };
 
 function LoginForm() {
@@ -31,18 +31,30 @@ function LoginForm() {
     setLoading(true);
     setError(null);
     const res = await signIn("credentials", { email, password, redirect: false });
-    setLoading(false);
 
-    if (res?.error) {
+    if (!res?.ok) {
+      setLoading(false);
       setError("Invalid credentials. Please check your email and password.");
       return;
     }
+    const session = await getSession();
+    setLoading(false);
+
+    if (!session?.user?.role) {
+      setError("Unable to determine your account role. Please try again.");
+      return;
+    }
+
     // If we got here via the middleware bouncing an unauthenticated request
     // (e.g. someone scanning the LOA's QR code on a device without a
     // session), honor that original destination instead of always sending
     // the user to their role's default portal.
     const callbackUrl = params.get("callbackUrl");
-    router.push(callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : ROLE_REDIRECT[role] ?? "/claimant");
+    router.push(
+      callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
+        ? callbackUrl
+        : ROLE_REDIRECT[session.user.role]
+    );
   }
 
   return (

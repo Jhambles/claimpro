@@ -1,9 +1,13 @@
 import { ClaimStatus, PolicyCategory, Role } from "@prisma/client";
 import { IClaimRepository, ClaimWithRelations } from "@/repositories/interfaces";
 import { PrismaClaimRepository } from "@/repositories/claim.repository";
+import { IClaimDecisionRepository, PrismaClaimDecisionRepository } from "@/repositories/claim-decision.repository";
 import { NotificationService } from "./notification.service";
 import { AuditService } from "./audit.service";
 import { ClaimValidationService } from "./claim-validation.service";
+
+export const MIN_REASON_LENGTH = 5;
+export const MAX_REASON_LENGTH = 500;
 
 // Business rules live here (SRP). Route handlers stay thin "controllers" that
 // only translate HTTP <-> service calls; the service never touches req/res.
@@ -12,7 +16,8 @@ export class ClaimService {
     private readonly claims: IClaimRepository = new PrismaClaimRepository(),
     private readonly notifications: NotificationService = new NotificationService(),
     private readonly audit: AuditService = new AuditService(),
-    private readonly validation: ClaimValidationService = new ClaimValidationService()
+    private readonly validation: ClaimValidationService = new ClaimValidationService(),
+    private readonly decisions: IClaimDecisionRepository = new PrismaClaimDecisionRepository()
   ) {}
 
   private static readonly VALID_TRANSITIONS: Record<ClaimStatus, ClaimStatus[]> = {
@@ -32,6 +37,10 @@ export class ClaimService {
 
   getClaim(id: string) {
     return this.claims.findById(id);
+  }
+
+  listDecisions(claimId: string) {
+    return this.decisions.listForClaim(claimId);
   }
 
   getValidationIssues(claim: ClaimWithRelations) {
@@ -61,7 +70,23 @@ export class ClaimService {
     throw new ServiceError("Could not generate a unique reference ID. Please try again.", 500);
   }
 
-  async transitionStatus(claimId: string, nextStatus: ClaimStatus, processorId: string, actor?: { name: string; role: string }) {
+  // `reason` is mandatory for every staff decision (verify / approve / reject).
+  // It is enforced here, not just in the UI, so the API can't be used to skip it.
+  async transitionStatus(
+    claimId: string,
+    nextStatus: ClaimStatus,
+    processorId: string,
+    reason: string,
+    actor?: { name: string; role: string }
+  ) {
+    const trimmedReason = (reason ?? "").trim();
+    if (trimmedReason.length < MIN_REASON_LENGTH) {
+      throw new ServiceError(`Please state a reason (at least ${MIN_REASON_LENGTH} characters).`, 400);
+    }
+    if (trimmedReason.length > MAX_REASON_LENGTH) {
+      throw new ServiceError(`The reason is too long (maximum ${MAX_REASON_LENGTH} characters).`, 400);
+    }
+
     const claim = await this.claims.findById(claimId);
     if (!claim) throw new ServiceError("Claim not found.", 404);
 
@@ -87,11 +112,27 @@ export class ClaimService {
     }
 
     const updated = await this.claims.updateStatus(claimId, nextStatus, processorId);
+
+    try {
+      await this.decisions.create({
+        claimId,
+        status: nextStatus,
+        reason: trimmedReason,
+        decidedById: processorId,
+        decidedByName: actor?.name ?? "Staff",
+        decidedByRole: actor?.role ?? "PROCESSOR",
+      });
+    } catch (err) {
+      // The status change is already persisted; the reason still reaches the
+      // claimant through the notification and the audit log below.
+      console.error("Failed to record claim decision:", err);
+    }
+
     try {
       // Awaited (not fire-and-forget): on a serverless runtime like Vercel, an
       // un-awaited promise can be cut off the instant the response is sent, so
       // a "best-effort" background write could silently never land.
-      await this.notifications.notifyStatusChange(updated.userId, updated.referenceId, nextStatus, updated.id);
+      await this.notifications.notifyStatusChange(updated.userId, updated.referenceId, nextStatus, updated.id, trimmedReason);
     } catch (err) {
       // A notification failure still shouldn't fail the (already-persisted) status change.
       console.error("Failed to create status-change notification:", err);
@@ -103,7 +144,7 @@ export class ClaimService {
         actorName: actor.name,
         actorRole: actor.role,
         action: "CLAIM_STATUS_CHANGED",
-        detail: `${updated.referenceId} moved from ${claim.status} to ${nextStatus}`,
+        detail: `${updated.referenceId} moved from ${claim.status} to ${nextStatus}. Reason: ${trimmedReason}`,
       });
     }
 

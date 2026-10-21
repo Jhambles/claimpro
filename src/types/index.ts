@@ -38,6 +38,15 @@ export interface ClaimIssue {
   message: string;
 }
 
+export interface DecisionDTO {
+  id: string;
+  status: ClaimStatus;
+  reason: string;
+  decidedByName: string;
+  decidedByRole: string;
+  createdAt: string;
+}
+
 export interface ClaimDTO {
   id: string;
   referenceId: string;
@@ -52,6 +61,7 @@ export interface ClaimDTO {
   payments?: PaymentDTO[];
   loa?: LoaDTO | null;
   issues?: ClaimIssue[];
+  decisions?: DecisionDTO[];
 }
 
 export interface NotificationDTO {
@@ -69,6 +79,7 @@ export interface CreateClaimInput {
 
 export interface UpdateClaimStatusInput {
   status: ClaimStatus;
+  reason: string;
 }
 
 export interface SystemStats {

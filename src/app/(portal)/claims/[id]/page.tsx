@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { DecisionModal, DecisionStatus } from "@/components/ui/DecisionModal";
 import { buildLoaHtml } from "@/lib/loaDocument";
 import { ClaimDTO } from "@/types";
 
@@ -11,6 +12,14 @@ const CATEGORY_LABEL: Record<string, string> = {
   AUTOMOTIVE: "Accidental Damage",
   HOMEOWNERS: "Homeowners Protection",
 };
+
+const DECISION_LABEL: Record<string, { label: string; className: string }> = {
+  VERIFIED: { label: "Verified", className: "bg-blue-100 text-blue-700" },
+  APPROVED: { label: "Approved", className: "bg-teal-100 text-teal-700" },
+  REJECTED: { label: "Rejected", className: "bg-red-100 text-red-600" },
+};
+
+const ROLE_LABEL: Record<string, string> = { PROCESSOR: "Processor", ADMIN: "Admin" };
 
 const PROVIDERS: { key: "GCASH" | "MAYA" | "PAYPAL" | "BANK_TRANSFER"; label: string; color: string }[] = [
   { key: "GCASH", label: "GCash", color: "bg-[#007cff]" },
@@ -49,6 +58,7 @@ export default function ClaimDetailPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [pendingDecision, setPendingDecision] = useState<DecisionStatus | null>(null);
   const [payoutAmount, setPayoutAmount] = useState("500");
   const [showBankForm, setShowBankForm] = useState(false);
   const [bankChoice, setBankChoice] = useState(PH_BANKS[0]);
@@ -115,17 +125,20 @@ export default function ClaimDetailPage() {
     load();
   }
 
-  async function transition(status: string) {
+  // Called by the reason pop-up. Throwing keeps the pop-up open and shows the
+  // message inside it (e.g. the server's "unresolved issues" explanation).
+  async function submitDecision(reason: string) {
+    if (!pendingDecision) return;
     const res = await fetch(`/api/claims/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: pendingDecision, reason }),
     });
     if (!res.ok) {
-      const body = await res.json();
-      alert(body.error ?? "Update failed.");
-      return;
+      const body = await res.json().catch(() => ({}));
+      throw new Error(typeof body.error === "string" ? body.error : "Update failed.");
     }
+    setPendingDecision(null);
     load();
   }
 
@@ -196,12 +209,13 @@ export default function ClaimDetailPage() {
     w.document.close();
   }
 
-  if (loading) return <div className="p-12 text-slate-400">Loading claimâ€¦</div>;
+  if (loading && !claim) return <div className="p-12 text-slate-400">Loading claimâ€¦</div>;
   if (!claim) return <div className="p-12 text-slate-400">{loadError ?? "Claim not found."}</div>;
 
   const role = session?.user?.role;
   const isOwner = role === "CLIENT" && claim.user.id === session?.user?.id;
   const isStaff = role === "PROCESSOR" || role === "ADMIN";
+  const hasBlockingIssue = !!claim.issues?.some((i) => i.severity === "blocking");
 
   return (
     <div className="min-h-screen bg-slate-50 p-12">
@@ -251,14 +265,21 @@ export default function ClaimDetailPage() {
             <div className="flex gap-3 mb-8">
               {claim.status === "PENDING" && (
                 <>
-                  <button onClick={() => transition("VERIFIED")} className="bg-navy text-white px-6 py-2 rounded-lg text-sm font-bold">Verify</button>
-                  <button onClick={() => transition("REJECTED")} className="bg-red-500 text-white px-6 py-2 rounded-lg text-sm font-bold">Reject</button>
+                  <button onClick={() => setPendingDecision("VERIFIED")} className="bg-navy text-white px-6 py-2 rounded-lg text-sm font-bold">Verify</button>
+                  <button onClick={() => setPendingDecision("REJECTED")} className="bg-red-500 text-white px-6 py-2 rounded-lg text-sm font-bold">Reject</button>
                 </>
               )}
               {claim.status === "VERIFIED" && (
                 <>
-                  <button onClick={() => transition("APPROVED")} className="bg-teal text-white px-6 py-2 rounded-lg text-sm font-bold">Approve</button>
-                  <button onClick={() => transition("REJECTED")} className="bg-red-500 text-white px-6 py-2 rounded-lg text-sm font-bold">Reject</button>
+                  <button
+                    onClick={() => setPendingDecision("APPROVED")}
+                    disabled={hasBlockingIssue}
+                    title={hasBlockingIssue ? "Resolve the red flags above before approving." : undefined}
+                    className="bg-teal text-white px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Approve
+                  </button>
+                  <button onClick={() => setPendingDecision("REJECTED")} className="bg-red-500 text-white px-6 py-2 rounded-lg text-sm font-bold">Reject</button>
                 </>
               )}
             </div>
@@ -270,6 +291,28 @@ export default function ClaimDetailPage() {
             </button>
           )}
         </div>
+
+        {claim.decisions && claim.decisions.length > 0 && (
+          <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-10 mb-8">
+            <h2 className="text-xl font-bold text-navy mb-6">Decision History</h2>
+            <ul className="space-y-5">
+              {claim.decisions.map((d) => {
+                const meta = DECISION_LABEL[d.status] ?? { label: d.status, className: "bg-slate-100 text-slate-600" };
+                return (
+                  <li key={d.id} className="border-l-4 border-slate-100 pl-5">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${meta.className}`}>{meta.label}</span>
+                      <span className="text-xs text-slate-400">
+                        {d.decidedByName} ({ROLE_LABEL[d.decidedByRole] ?? d.decidedByRole}) &middot; {new Date(d.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{d.reason}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-10 mb-8">
           <h2 className="text-xl font-bold text-navy mb-6">Supporting Documents</h2>
@@ -403,6 +446,15 @@ export default function ClaimDetailPage() {
 
         {error && <p className="text-red-500 text-sm font-bold text-center mt-6">{error}</p>}
       </div>
+
+      {pendingDecision && (
+        <DecisionModal
+          status={pendingDecision}
+          referenceId={claim.referenceId}
+          onCancel={() => setPendingDecision(null)}
+          onConfirm={submitDecision}
+        />
+      )}
     </div>
   );
 }

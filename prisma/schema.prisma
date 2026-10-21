@@ -63,6 +63,7 @@ model Claim {
   documents   Document[]
   loa         Loa?
   payments    Payment[]
+  decisions   ClaimDecision[]
 
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -197,4 +198,23 @@ model PayoutPreference {
   updatedAt     DateTime        @updatedAt
 
   @@map("payout_preferences")
+}
+
+// One row per staff decision (verify / approve / reject) on a claim, with the
+// reason the staff member entered in the confirmation pop-up. Kept as history
+// rather than a single column so a claim that was verified and later rejected
+// shows both reasons.
+model ClaimDecision {
+  id            String      @id @default(cuid())
+  claimId       String
+  claim         Claim       @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  status        ClaimStatus
+  reason        String      @db.Text
+  decidedById   String?
+  decidedByName String
+  decidedByRole String
+  createdAt     DateTime    @default(now())
+
+  @@index([claimId, createdAt])
+  @@map("claim_decisions")
 }

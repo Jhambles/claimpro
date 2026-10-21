@@ -4,13 +4,17 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { DecisionModal, DecisionStatus } from "@/components/ui/DecisionModal";
 import { getAdminNav } from "@/lib/adminNav";
 import { ClaimDTO } from "@/types";
+
+const hasBlocking = (c: ClaimDTO) => !!c.issues?.some((i) => i.severity === "blocking");
 
 export default function VerificationQueuePage() {
   const { data: session } = useSession();
   const [claims, setClaims] = useState<ClaimDTO[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState<{ id: string; referenceId: string; status: DecisionStatus } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -24,17 +28,18 @@ export default function VerificationQueuePage() {
     load();
   }, []);
 
-  async function transition(id: string, status: string) {
-    const res = await fetch(`/api/claims/${id}`, {
+  async function submitDecision(reason: string) {
+    if (!pending) return;
+    const res = await fetch(`/api/claims/${pending.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: pending.status, reason }),
     });
     if (!res.ok) {
-      const body = await res.json();
-      alert(body.error ?? "Update failed.");
-      return;
+      const body = await res.json().catch(() => ({}));
+      throw new Error(typeof body.error === "string" ? body.error : "Update failed.");
     }
+    setPending(null);
     load();
   }
 
@@ -69,7 +74,7 @@ export default function VerificationQueuePage() {
                     {c.issues && c.issues.length > 0 ? (
                       <span
                         className={`text-[10px] font-black uppercase px-2 py-1 rounded-full ${
-                          c.issues.some((i) => i.severity === "blocking") ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"
+                          hasBlocking(c) ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"
                         }`}
                         title={c.issues.map((i) => i.message).join("\n")}
                       >
@@ -82,14 +87,21 @@ export default function VerificationQueuePage() {
                   <td className="p-6 text-center space-x-2">
                     {c.status === "PENDING" && (
                       <>
-                        <button onClick={() => transition(c.id, "VERIFIED")} className="bg-teal-500/20 text-teal-400 px-4 py-1.5 rounded-full text-xs font-black uppercase hover:bg-teal-500/30 transition">Verify</button>
-                        <button onClick={() => transition(c.id, "REJECTED")} className="bg-red-500/20 text-red-400 px-4 py-1.5 rounded-full text-xs font-black uppercase hover:bg-red-500/30 transition">Reject</button>
+                        <button onClick={() => setPending({ id: c.id, referenceId: c.referenceId, status: "VERIFIED" })} className="bg-teal-500/20 text-teal-400 px-4 py-1.5 rounded-full text-xs font-black uppercase hover:bg-teal-500/30 transition">Verify</button>
+                        <button onClick={() => setPending({ id: c.id, referenceId: c.referenceId, status: "REJECTED" })} className="bg-red-500/20 text-red-400 px-4 py-1.5 rounded-full text-xs font-black uppercase hover:bg-red-500/30 transition">Reject</button>
                       </>
                     )}
                     {c.status === "VERIFIED" && (
                       <>
-                        <button onClick={() => transition(c.id, "APPROVED")} className="bg-teal-500/20 text-teal-400 px-4 py-1.5 rounded-full text-xs font-black uppercase hover:bg-teal-500/30 transition">Approve</button>
-                        <button onClick={() => transition(c.id, "REJECTED")} className="bg-red-500/20 text-red-400 px-4 py-1.5 rounded-full text-xs font-black uppercase hover:bg-red-500/30 transition">Reject</button>
+                        <button
+                          onClick={() => setPending({ id: c.id, referenceId: c.referenceId, status: "APPROVED" })}
+                          disabled={hasBlocking(c)}
+                          title={hasBlocking(c) ? "Resolve the red flags on this claim before approving." : undefined}
+                          className="bg-teal-500/20 text-teal-400 px-4 py-1.5 rounded-full text-xs font-black uppercase hover:bg-teal-500/30 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Approve
+                        </button>
+                        <button onClick={() => setPending({ id: c.id, referenceId: c.referenceId, status: "REJECTED" })} className="bg-red-500/20 text-red-400 px-4 py-1.5 rounded-full text-xs font-black uppercase hover:bg-red-500/30 transition">Reject</button>
                       </>
                     )}
                     {(c.status === "APPROVED" || c.status === "REJECTED") && (
@@ -105,6 +117,15 @@ export default function VerificationQueuePage() {
           </table>
         </div>
       </main>
+
+      {pending && (
+        <DecisionModal
+          status={pending.status}
+          referenceId={pending.referenceId}
+          onCancel={() => setPending(null)}
+          onConfirm={submitDecision}
+        />
+      )}
     </div>
   );
 }

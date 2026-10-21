@@ -101,7 +101,9 @@ export default function ClaimsHistoryPage() {
                         View LOA
                       </button>
                     ) : claim.status === "REJECTED" ? (
-                      <span className="text-red-400 font-bold text-xs italic">Not approved</span>
+                      <Link href={`/claims/${claim.id}`} className="text-red-400 font-bold text-xs underline decoration-red-200">
+                        Not approved - view reason
+                      </Link>
                     ) : (
                       <span className="text-slate-300 font-bold text-xs italic">Awaiting...</span>
                     )}
