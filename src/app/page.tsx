@@ -11,12 +11,17 @@ export default function LandingPage() {
             CLAIMS<span className="text-teal">PRO</span>
           </span>
         </div>
-        <Link
-          href="/login"
-          className="bg-navy text-white px-8 py-3 rounded-lg hover:bg-teal transition font-bold shadow-lg shadow-slate-200"
-        >
-          Portal Login
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link href="/about" className="font-semibold text-slate-600 hover:text-teal transition">
+            About Us
+          </Link>
+          <Link
+            href="/login"
+            className="bg-navy text-white px-8 py-3 rounded-lg hover:bg-teal transition font-bold shadow-lg shadow-slate-200"
+          >
+            Portal Login
+          </Link>
+        </div>
       </nav>
 
       <section className="relative flex flex-1 min-h-[600px] items-center overflow-hidden">
@@ -45,9 +50,14 @@ export default function LandingPage() {
       </section>
 
       <footer className="bg-navy py-8 px-12 text-center border-t border-white/10">
-        <p className="text-slate-500 text-xs tracking-widest uppercase">
-          System Core v3.1 | Protected by Enterprise Encryption
-        </p>
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+          <p className="text-slate-500 text-xs tracking-widest uppercase">
+            System Core v3.1 | Protected by Enterprise Encryption
+          </p>
+          <Link href="/about" className="text-sm text-white/70 hover:text-white transition">
+            About Us
+          </Link>
+        </div>
       </footer>
     </div>
   );

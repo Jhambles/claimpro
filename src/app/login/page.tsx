@@ -105,6 +105,9 @@ function LoginForm() {
         <Link href="/" className="block text-center text-xs text-slate-400 hover:text-teal transition mt-4">
           Return to Gateway
         </Link>
+        <Link href="/about" className="block text-center text-xs text-slate-400 hover:text-teal transition mt-3">
+          About ClaimsPro
+        </Link>
       </div>
     </div>
   );
