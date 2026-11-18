@@ -23,7 +23,15 @@ export async function GET() {
   if (!session || session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const users = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      verificationStatus: true,
+      idDocumentName: true,
+    },
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(users);

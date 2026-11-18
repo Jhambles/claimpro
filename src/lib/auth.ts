@@ -20,6 +20,7 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({ where: { email: credentials.email } });
         if (!user) return null;
+        if (user.verificationStatus !== "APPROVED") return null;
 
         const valid = await verifyPassword(credentials.password, user.passwordHash);
         if (!valid) return null;
