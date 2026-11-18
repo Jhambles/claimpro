@@ -34,7 +34,7 @@ function LoginForm() {
 
     if (!res?.ok) {
       setLoading(false);
-      setError("Invalid credentials. Please check your email and password.");
+      setError("Invalid credentials, or your account is awaiting ID approval.");
       return;
     }
     const session = await getSession();
@@ -102,6 +102,12 @@ function LoginForm() {
         >
           {loading ? "Authenticating..." : "Authenticate System"}
         </button>
+        <Link
+          href="/signup"
+          className="block w-full text-center border border-slate-200 text-slate-700 py-4 rounded-xl font-bold hover:border-teal hover:text-teal transition"
+        >
+          Sign Up
+        </Link>
         <Link href="/" className="block text-center text-xs text-slate-400 hover:text-teal transition mt-4">
           Return to Gateway
         </Link>
