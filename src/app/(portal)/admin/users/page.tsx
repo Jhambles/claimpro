@@ -10,8 +10,6 @@ interface AdminUser {
   email: string;
   role: "CLIENT" | "PROCESSOR" | "ADMIN";
   createdAt: string;
-  verificationStatus: "PENDING" | "APPROVED" | "REJECTED";
-  idDocumentName: string | null;
 }
 
 export default function IdentityManagerPage() {
@@ -21,7 +19,6 @@ export default function IdentityManagerPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "CLIENT" as AdminUser["role"] });
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -55,21 +52,6 @@ export default function IdentityManagerPage() {
     }
     setForm({ name: "", email: "", password: "", role: "CLIENT" });
     load();
-  }
-
-  async function reviewUser(id: string, status: "APPROVED" | "REJECTED") {
-    setReviewError(null);
-    const res = await fetch(`/api/admin/users/${id}/verification`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setReviewError(typeof body.error === "string" ? body.error : "Could not update ID verification.");
-      return;
-    }
-    await load();
   }
 
   return (
@@ -122,8 +104,7 @@ export default function IdentityManagerPage() {
           </button>
         </div>
 
-        {reviewError && <p role="alert" className="text-red-400 text-sm font-bold mb-4">{reviewError}</p>}
-        <div className="bg-white/5 rounded-[2rem] border border-white/10 overflow-x-auto">
+        <div className="bg-white/5 rounded-[2rem] border border-white/10 overflow-hidden max-w-3xl">
           <table className="w-full text-left">
             <thead className="text-[10px] text-slate-400 uppercase tracking-widest">
               <tr>
@@ -131,7 +112,6 @@ export default function IdentityManagerPage() {
                 <th className="p-6">Email</th>
                 <th className="p-6">Role</th>
                 <th className="p-6">Joined</th>
-                <th className="p-6">ID Verification</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -141,29 +121,10 @@ export default function IdentityManagerPage() {
                   <td className="p-6 text-slate-400">{u.email}</td>
                   <td className="p-6"><span className="text-[10px] bg-teal-500/20 text-teal-400 px-3 py-1 rounded-full font-black uppercase">{u.role}</span></td>
                   <td className="p-6 text-slate-400 text-sm">{new Date(u.createdAt).toLocaleDateString()}</td>
-                  <td className="p-6">
-                    {u.idDocumentName && (
-                      <a href={`/api/admin/users/${u.id}/id-document`} target="_blank" rel="noreferrer"
-                        className="text-teal-400 underline text-sm">View ID</a>
-                    )}
-                    <span className="block text-xs text-slate-400 mt-1">{u.verificationStatus}</span>
-                    {u.verificationStatus === "PENDING" && (
-                      <div className="flex gap-2 mt-3">
-                        <button onClick={() => reviewUser(u.id, "APPROVED")}
-                          className="bg-teal-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-teal-500">
-                          Approve
-                        </button>
-                        <button onClick={() => reviewUser(u.id, "REJECTED")}
-                          className="bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-red-500">
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </td>
                 </tr>
               ))}
               {!loading && users.length === 0 && (
-                <tr><td colSpan={5} className="p-10 text-center text-slate-400">No users yet.</td></tr>
+                <tr><td colSpan={4} className="p-10 text-center text-slate-400">No users yet.</td></tr>
               )}
             </tbody>
           </table>

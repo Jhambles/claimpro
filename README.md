@@ -111,10 +111,12 @@ git push -u origin main
 
 ## 5. Extending it
 
-- **File uploads**: claim evidence and signup ID photos use private
-  [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) storage; configure `BLOB_READ_WRITE_TOKEN`.
-- **Registration**: users can register at `/signup`; an admin must approve their ID in the Identity
-  Manager before they can sign in.
+- **File uploads**: the `Document` model and upload dropzone UI are in place; wire the dropzone
+  to [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) or Supabase Storage and POST to
+  a new `/api/claims/:id/documents` route.
+- **Registration**: add a `POST /api/users` route using `PrismaUserRepository.create` (hash the
+  password with `hashPassword` from `src/lib/password.ts`) if you want self-serve signup instead
+  of admin-provisioned accounts.
 - **Testing repositories in isolation**: because services depend on `IClaimRepository` /
   `IUserRepository` / `ILoaRepository`, you can inject an in-memory fake implementing the same
   interface in unit tests without touching Postgres.
@@ -132,16 +134,13 @@ git push -u origin main
 - **`/api/admin/users` route didn't exist** despite the folder being present — implemented.
 
 ### New: file uploads
-The evidence dropzone on the claim detail page (`/claims/:id`) and registration ID photo upload use private **Vercel Blob** storage. Requires `BLOB_READ_WRITE_TOKEN` (create a Blob store from your Vercel project's Storage tab). Without it configured, uploads fail with a clear 503 message instead of silently doing nothing.
-
-### New: self-service signup and ID verification
-Users can register at `/signup` with a JPG or PNG ID photo. Their account remains pending until an admin reviews the photo in `/admin/users` and approves it; pending and rejected accounts cannot sign in. The ID photo is private and served to admins only.
+The evidence dropzone on the claim detail page (`/claims/:id`) now uploads to **Vercel Blob**. Requires `BLOB_READ_WRITE_TOKEN` (create a Blob store from your Vercel project's Storage tab). Without it configured, uploads fail with a clear 503 message instead of silently doing nothing.
 
 ### New: claim detail page
 `/claims/:id` — shared by all three roles (authorization enforced server-side): shows claim info, uploaded documents, staff status-transition buttons, LOA access, and the payment section.
 
 ### New: Identity Manager (`/admin/users`)
-Real user list, ID review workflow for new registrations, and a form to provision Claimant/Processor/Admin accounts (`POST /api/admin/users`), backed by `PrismaUserRepository`.
+Real user list + a form to provision Claimant/Processor/Admin accounts (`POST /api/admin/users`), backed by `PrismaUserRepository`.
 
 ### New: notifications
 - Bell icon (top-right, any logged-in page) shows unread count and recent activity.

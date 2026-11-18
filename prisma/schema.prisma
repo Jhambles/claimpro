@@ -16,12 +16,6 @@ enum Role {
   ADMIN
 }
 
-enum UserVerificationStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 enum PolicyCategory {
   MEDICAL
   AUTOMOTIVE
@@ -41,9 +35,6 @@ model User {
   email         String   @unique
   passwordHash  String
   role          Role     @default(CLIENT)
-  verificationStatus UserVerificationStatus @default(APPROVED)
-  idDocumentUrl String?
-  idDocumentName String?
   createdAt     DateTime @default(now())
 
   claims        Claim[]        @relation("ClaimOwner")
