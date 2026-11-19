@@ -103,11 +103,14 @@ git push -u origin main
 
 1. [vercel.com/new](https://vercel.com/new) → Import your GitHub repo.
 2. Add environment variables in the Vercel project settings: `DATABASE_URL`, `DIRECT_URL`,
-   `NEXTAUTH_SECRET`, and `NEXTAUTH_URL` (set this to your production URL, e.g.
-   `https://claimspro.vercel.app`).
+   `NEXTAUTH_SECRET`, `NEXTAUTH_URL` (set this to your production URL, e.g.
+   `https://claimspro.vercel.app`), and `BLOB_READ_WRITE_TOKEN` (required for signup ID photos).
+   Set `CRON_SECRET` as well to protect the scheduled renewal-reminder endpoint.
 3. Deploy. The `build` script runs `prisma generate` automatically.
 4. Run the migration against your production database once (from your machine, pointed at the
    prod `.env`, or via a one-off `vercel env pull` + `npx prisma migrate deploy`).
+   Do not run the demo seed against production: it creates accounts with the publicly documented
+   `Passw0rd!` password. Provision a production admin with a unique, secure credential.
 
 ## 5. Extending it
 
